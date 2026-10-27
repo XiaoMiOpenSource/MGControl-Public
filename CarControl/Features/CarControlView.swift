@@ -12,6 +12,7 @@ struct CarControlView: View {
                 VStack(spacing: 16) {
                     if let vehicle = app.selectedVehicle {
                         header(vehicle)
+                        pinSection
                         commandGrid
                         safetyNote
                     } else {
@@ -84,6 +85,38 @@ struct CarControlView: View {
                 .card()
             }
         }
+    }
+
+    private var pinSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: app.pinVerified ? "checkmark.shield.fill" : "lock.shield")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(app.pinVerified ? Theme.success : Theme.accent)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("控车安全码")
+                        .font(.headline)
+                    Text(app.pinVerified
+                         ? "已验证，有效期内可直接下发控车指令"
+                         : "解锁、开窗、空调等操作需要先验证安全码")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer(minLength: 8)
+
+                Button(app.pinVerified ? "重新验证" : "输入安全码") {
+                    app.requestPINVerification()
+                }
+                .font(.footnote.weight(.semibold))
+                .buttonStyle(.borderedProminent)
+                .tint(app.pinVerified ? Theme.success : Theme.accent)
+                .disabled(app.isLoading)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card()
     }
 
     private var safetyNote: some View {

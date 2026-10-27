@@ -47,6 +47,7 @@ struct MG4StatusPage: View {
     var body: some View {
         VStack(spacing: 14) {
             hero
+            refreshButton
             statusRows
             metrics
             quickControls
@@ -110,6 +111,27 @@ struct MG4StatusPage: View {
             Spacer(minLength: 0)
         }
         .statusCard(padding: 18)
+    }
+
+    private var refreshButton: some View {
+        Button(action: onRefresh) {
+            HStack(spacing: 8) {
+                if isRefreshing {
+                    ProgressView().controlSize(.small).tint(StatusPalette.blue)
+                    Text("正在请求车辆上报最新信息…")
+                } else {
+                    Image(systemName: "arrow.clockwise")
+                    Text("手动刷新车辆信息")
+                }
+            }
+            .font(.system(size: 15, weight: .semibold))
+            .foregroundStyle(StatusPalette.blue)
+            .frame(maxWidth: .infinity, minHeight: 46)
+            .background(StatusPalette.blue.opacity(0.12))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .disabled(isRefreshing)
     }
 
     // MARK: 门锁 / 门窗

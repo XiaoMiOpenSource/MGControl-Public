@@ -48,7 +48,7 @@ struct VehicleHomeView: View {
                 await app.loadChargingData()
             }
             .refreshable {
-                await app.loadVehicles()
+                await app.refreshStatus()
                 await app.loadChargingData()
             }
         }
@@ -62,7 +62,10 @@ struct VehicleHomeView: View {
                 Menu {
                     ForEach(app.vehicles) { item in
                         Button {
-                            Task { await app.select(item) }
+                            Task {
+                                await app.select(item)
+                                await app.loadChargingData()
+                            }
                         } label: {
                             if item.vin == vehicle.vin {
                                 Label(item.model, systemImage: "checkmark")
@@ -91,6 +94,27 @@ struct VehicleHomeView: View {
             }
             .font(.footnote)
             .foregroundStyle(.secondary)
+
+            Button {
+                Task {
+                    await app.refreshStatus()
+                    await app.loadChargingData()
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    if app.isLoading {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                    Text(app.isLoading ? "正在请求车辆上报…" : "手动刷新车辆信息")
+                }
+                .font(.footnote.weight(.semibold))
+                .frame(maxWidth: .infinity, minHeight: 38)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(Theme.accent)
+            .disabled(app.selectedVehicle == nil || app.isLoading)
         }
         .card()
     }

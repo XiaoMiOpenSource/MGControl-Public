@@ -56,12 +56,16 @@ final class MG4DashboardViewModel: ObservableObject {
             state = .loggedOut
             return
         }
+        guard !isRefreshing else { return }
         if !silent { isRefreshing = true }
         defer { if !silent { isRefreshing = false } }
         do {
-            let data = try await api.fetchMG4Status(token: token)
+            let data = silent
+                ? try await api.fetchMG4Status(token: token)
+                : try await api.refreshMG4Status(token: token)
             state = .loaded(data)
             WidgetBridge.sync(data)
+            if !silent { toast = "车辆信息已刷新" }
         } catch let error as APIError {
             if error.code == "14101" { state = .expired }
             else if !silent { toast = error.message }

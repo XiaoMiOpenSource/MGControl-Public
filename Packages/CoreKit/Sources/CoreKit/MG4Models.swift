@@ -79,6 +79,7 @@ public enum MG4ControlAction: String, Codable, Sendable {
 
 public protocol MG4API: AnyObject {
     func fetchMG4Status(token: String) async throws -> MG4VehicleData
+    func refreshMG4Status(token: String) async throws -> MG4VehicleData
     func controlMG4(token: String, action: MG4ControlAction) async throws
 }
 
@@ -107,6 +108,15 @@ public final class MockMG4API: MG4API {
         }
         if token.contains("no-vehicle") {
             throw APIError(code: "10500702", message: "账户未绑定车辆")
+        }
+        data.updatedAt = Date()
+        return data
+    }
+
+    public func refreshMG4Status(token: String) async throws -> MG4VehicleData {
+        try await delay()
+        guard !token.isEmpty, !token.contains("expired") else {
+            throw APIError(code: "14101", message: "登录已过期，请重新登录")
         }
         data.updatedAt = Date()
         return data
@@ -148,6 +158,10 @@ public final class RemoteMG4API: MG4API {
 
     public func fetchMG4Status(token: String) async throws -> MG4VehicleData {
         try await request(path: "/api/vehicle/status", method: "GET", body: nil, token: token)
+    }
+
+    public func refreshMG4Status(token: String) async throws -> MG4VehicleData {
+        try await request(path: "/api/vehicle/refresh", method: "POST", body: nil, token: token)
     }
 
     public func controlMG4(token: String, action: MG4ControlAction) async throws {

@@ -308,14 +308,22 @@ final class AppState: ObservableObject {
 
     func refreshStatus() async {
         guard let token, let vin = selectedVehicle?.vin else { return }
+        guard !isLoading else { return }
         isLoading = true
+        defer { isLoading = false }
         do {
-            status = try await api.fetchStatus(token: token, vin: vin)
+            if let real = api as? MGRealClient {
+                status = try await real.refreshVehicleStatus(token: token, vin: vin)
+            } else {
+                status = try await api.fetchStatus(token: token, vin: vin)
+            }
             WidgetBridge.sync(vehicle: selectedVehicle, status: status, stats: chargingStats)
+            commandMessage = "车辆信息已刷新"
+        } catch let err as APIError {
+            errorMessage = err.message
         } catch {
             errorMessage = "刷新失败，请稍后再试"
         }
-        isLoading = false
     }
 
     // MARK: 车控
@@ -404,6 +412,21 @@ final class AppState: ObservableObject {
 
     // MARK: 安全码
 
+    /// 主动打开安全码输入，不依赖控车指令触发。
+    func requestPINVerification() {
+        guard let vin = selectedVehicle?.vin, !vin.isEmpty else {
+            errorMessage = "请先选择车辆"
+            return
+        }
+        guard api is MGRealClient else {
+            errorMessage = "当前为演示模式，无需验证控车安全码"
+            return
+        }
+        pendingPINCommand = nil
+        pinInput = ""
+        showPinPrompt = true
+    }
+
     func submitPIN() async {
         guard let vin = selectedVehicle?.vin, let real = api as? MGRealClient else {
             showPinPrompt = false
@@ -420,6 +443,8 @@ final class AppState: ObservableObject {
                 pendingPINCommand = nil
                 // 安全码已通过，同一次操作不再重复弹 Face ID
                 await execute(command, checkBiometrics: false)
+            } else {
+                commandMessage = "安全码验证成功，4 分钟内可直接控车"
             }
         } catch let err as APIError {
             errorMessage = err.message

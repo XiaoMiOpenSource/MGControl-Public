@@ -438,6 +438,20 @@ final class MGRealClient: APIClient {
         return Self.mapStatus(vin: vin, data: data)
     }
 
+    /// 主动请求车辆上报最新状态，再读取服务端车况；供手动刷新按钮调用。
+    func refreshVehicleStatus(token: String, vin: String) async throws -> VehicleStatus {
+        guard !vin.isEmpty else {
+            throw APIError(code: "no_vehicle", message: "请先选择车辆")
+        }
+        if swapToken.isEmpty { try await refreshSwapToken() }
+        _ = try await call("POST", base: mp,
+                           path: "/app-mp/vp/1.2/requestVehicleStatus",
+                           data: ["vin": vin, "nonce": Self.nonce(),
+                                  "token": swapToken])
+        try? await Task.sleep(nanoseconds: 2_000_000_000)
+        return try await fetchStatus(token: token, vin: vin)
+    }
+
     // MARK: - 消息
 
     func fetchMessages(token: String) async throws -> [MessageItem] {
@@ -661,6 +675,21 @@ final class RealMG4API: MG4API {
             #if DEBUG
             print("MGADDRESS:", mapped.address)
             #endif
+        }
+        return mapped
+    }
+
+    func refreshMG4Status(token: String) async throws -> MG4VehicleData {
+        if client.swapToken.isEmpty { try await client.refreshSwapToken() }
+        let vehicles = try await client.fetchVehicles(token: token)
+        guard let vehicle = vehicles.first else {
+            throw APIError(code: "10500702", message: "账户未绑定车辆")
+        }
+        lastVin = vehicle.vin
+        let status = try await client.refreshVehicleStatus(token: token, vin: vehicle.vin)
+        var mapped = Self.map(vehicle: vehicle, status: status)
+        if let loc = status.parkingLocation {
+            mapped.address = await Self.reverseGeocode(loc)
         }
         return mapped
     }
