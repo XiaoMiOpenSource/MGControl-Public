@@ -31,7 +31,7 @@ struct VehicleHomeView: View {
             .background(Color(uiColor: .systemGroupedBackground))
             .navigationTitle("车辆")
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         Task {
                             await app.refreshStatus()

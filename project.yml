@@ -39,6 +39,8 @@ targets:
         NSBluetoothAlwaysUsageDescription: 用于连接车辆蓝牙设备
         NSLocationWhenInUseUsageDescription: 用于查看车辆位置与寻车
         CarControlAppGroupIdentifier: group.com.alanpfx.mgcontrol.shared
+        LSApplicationQueriesSchemes:
+          - mglive
         CFBundleURLTypes:
           - CFBundleURLName: com.alanpfx.mgcontrol
             CFBundleURLSchemes:

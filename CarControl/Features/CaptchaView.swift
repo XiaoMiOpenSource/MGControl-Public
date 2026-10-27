@@ -40,6 +40,7 @@ struct CaptchaView: UIViewRepresentable {
     static func dismantleUIView(_ uiView: WKWebView, coordinator: Coordinator) {
         uiView.configuration.userContentController.removeScriptMessageHandler(forName: "captcha")
         uiView.configuration.userContentController.removeScriptMessageHandler(forName: "captchaError")
+        uiView.configuration.userContentController.removeScriptMessageHandler(forName: "captchaLog")
     }
 
     final class Coordinator: NSObject, WKScriptMessageHandler {
