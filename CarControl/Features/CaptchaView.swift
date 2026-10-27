@@ -48,6 +48,7 @@ struct CaptchaView: UIViewRepresentable {
         let onError: ((String) -> Void)?
         let onLog: ((String) -> Void)?
         weak var webView: WKWebView?
+        private var delivered = false
 
         init(onValidate: @escaping (String) -> Void,
              onError: ((String) -> Void)?,
@@ -61,7 +62,8 @@ struct CaptchaView: UIViewRepresentable {
                                    didReceive message: WKScriptMessage) {
             switch message.name {
             case "captcha":
-                if let validate = message.body as? String, !validate.isEmpty {
+                if let validate = message.body as? String, !validate.isEmpty, !delivered {
+                    delivered = true
                     onValidate(validate)
                 }
             case "captchaError":
@@ -83,11 +85,10 @@ struct CaptchaView: UIViewRepresentable {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-      <meta name="referrer" content="no-referrer">
       <style>
         body, html { width: 100%; height: 100%; margin: 0; padding: 0; display: flex;
                      justify-content: center; align-items: center; background: #ffffff; }
-        #captcha-box { width: 320px; }
+        #captcha { width: 300px; }
       </style>
       <script>
         window.onerror = function (msg, url, line) {
@@ -102,10 +103,9 @@ struct CaptchaView: UIViewRepresentable {
           setTimeout(function () { if (!window.__ready) { post('captchaLog', 'timeout-5s'); } }, 5000);
           initNECaptcha({
             captchaId: '\(captchaId)',
-            element: '#captcha-box',
-            mode: 'normal',
-            width: '320px',
-            lang: 'zh-CN',
+            element: '#captcha',
+            mode: 'float',
+            width: '300px',
             onVerify: function (err, data) {
               if (err) { post('captchaError', JSON.stringify(err)); return; }
               var v = '';
@@ -127,7 +127,7 @@ struct CaptchaView: UIViewRepresentable {
       <script src="https://cstaticdun.126.net/load.min.js" onload="window.__startCaptcha()" onerror="post('captchaError','script-load-failed')"></script>
     </head>
     <body>
-      <div id="captcha-box"></div>
+      <div id="captcha"></div>
     </body>
     </html>
     """

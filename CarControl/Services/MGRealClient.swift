@@ -245,7 +245,8 @@ final class MGRealClient: APIClient {
 
     // MARK: - 登录
 
-    /// 发码：易盾 H5 拿到 `validate` 后调用 `graphicVerificationV2`（docs/06 §8）。
+    /// 对齐 MGControl 0.57 的发码 DTO：图形验证凭据、品牌、手机号和 captchaId 缺一不可。
+    /// 旧参考实现使用 phone 单字段，会在完成易盾后被服务端以 21102 拒绝。
     func requestSMSCode(phone: String, captchaValidate: String) async throws {
         let trimmed = phone.trimmingCharacters(in: .whitespaces)
         guard trimmed.count == 11, trimmed.allSatisfy(\.isNumber) else {
@@ -254,10 +255,17 @@ final class MGRealClient: APIClient {
         guard !captchaValidate.isEmpty else {
             throw APIError(code: "captcha_required", message: "请先完成安全验证")
         }
-        _ = try await call("POST", base: capi,
-                           path: "/app-mp/uais/1.1/graphicVerificationV2",
-                           data: ["phone": trimmed,
-                                  "NECaptchaValidate": captchaValidate])
+        let dict = try await call("POST", base: capi,
+                                  path: "/app-mp/uais/1.1/graphicVerificationV2",
+                                  data: ["NECaptchaValidate": captchaValidate,
+                                         "brandCode": 2,
+                                         "mobilePhone": trimmed,
+                                         "captchaId": CaptchaView.captchaId])
+        let data = dict["data"] as? [String: Any]
+        let sent = (data?["send"] as? String)?.lowercased() == "true" || (data?["send"] as? Bool) == true
+        guard sent else {
+            throw APIError(code: "sms_unconfirmed", message: "短信服务未确认发送，请重新完成验证")
+        }
     }
 
     func login(phone: String, code: String) async throws -> LoginResult {
