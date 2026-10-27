@@ -60,9 +60,10 @@ jobs:
           TARGET: ${{ inputs.deployment_target || '16.0' }}
         run: |
           set -euo pipefail
+          chmod +x scripts/*.sh
           args=(--target "$TARGET")
           if [ "${APP_GROUP:-true}" = "true" ]; then args+=(--appgroup); fi
-          ./scripts/build-ipa.sh "${args[@]}"
+          bash scripts/build-ipa.sh "${args[@]}"
       - name: Verify iOS deployment compatibility
         env:
           TARGET: ${{ inputs.deployment_target || '16.0' }}
